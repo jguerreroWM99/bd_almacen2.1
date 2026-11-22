@@ -5,7 +5,6 @@ import org.springframework.transaction.annotation.Transactional;
 import prueba.com.example.almaceneronuevo.dto.ProductoRequestDTO;
 import prueba.com.example.almaceneronuevo.dto.ProductoResponseDTO;
 import prueba.com.example.almaceneronuevo.exception.RecursoNoEncontradoException;
-import prueba.com.example.almaceneronuevo.exception.ReglaNegocioException;
 import prueba.com.example.almaceneronuevo.model.Modelo;
 import prueba.com.example.almaceneronuevo.model.Producto;
 import prueba.com.example.almaceneronuevo.model.TipoProducto;
@@ -56,10 +55,6 @@ public class ProductoServiceImpl implements ProductoService {
     @Override
     @Transactional
     public ProductoResponseDTO crearProducto(ProductoRequestDTO request, Long usuarioSolicitanteId) {
-        if (productoRepository.existsByCodigoSkuIgnoreCase(request.getCodigoSku().trim())) {
-            throw new ReglaNegocioException("Ya existe un producto registrado con el SKU: " + request.getCodigoSku());
-        }
-
         TipoProducto tipo = tipoProductoRepository.findById(request.getTipoProductoId())
                 .orElseThrow(() -> new RecursoNoEncontradoException("Tipo de producto no encontrado con ID: " + request.getTipoProductoId()));
 
@@ -67,7 +62,7 @@ public class ProductoServiceImpl implements ProductoService {
                 .orElseThrow(() -> new RecursoNoEncontradoException("Modelo no encontrado con ID: " + request.getModeloId()));
 
         Producto producto = new Producto();
-        producto.setCodigoSku(request.getCodigoSku().trim().toUpperCase());
+        producto.setCodigoSku(generarSiguienteSku());
         producto.setNombre(request.getNombre().trim());
         producto.setEspecificaciones(request.getEspecificaciones());
         producto.setPrecio(request.getPrecio());
@@ -93,18 +88,13 @@ public class ProductoServiceImpl implements ProductoService {
         Producto producto = productoRepository.findById(id)
                 .orElseThrow(() -> new RecursoNoEncontradoException("Producto no encontrado con ID: " + id));
 
-        if (!producto.getCodigoSku().equalsIgnoreCase(request.getCodigoSku().trim())
-                && productoRepository.existsByCodigoSkuIgnoreCase(request.getCodigoSku().trim())) {
-            throw new ReglaNegocioException("Ya existe otro producto con el SKU: " + request.getCodigoSku());
-        }
-
         TipoProducto tipo = tipoProductoRepository.findById(request.getTipoProductoId())
                 .orElseThrow(() -> new RecursoNoEncontradoException("Tipo de producto no encontrado con ID: " + request.getTipoProductoId()));
 
         Modelo modelo = modeloRepository.findById(request.getModeloId())
                 .orElseThrow(() -> new RecursoNoEncontradoException("Modelo no encontrado con ID: " + request.getModeloId()));
 
-        producto.setCodigoSku(request.getCodigoSku().trim().toUpperCase());
+        // El codigoSku original del producto se mantiene intacto
         producto.setNombre(request.getNombre().trim());
         producto.setEspecificaciones(request.getEspecificaciones());
         producto.setPrecio(request.getPrecio());
@@ -162,5 +152,20 @@ public class ProductoServiceImpl implements ProductoService {
         dto.setMarcaId(p.getModelo().getMarca().getId());
         dto.setMarcaNombre(p.getModelo().getMarca().getNombre());
         return dto;
+    }
+
+    private String generarSiguienteSku() {
+        long siguienteNumero = productoRepository.findTopByOrderByIdDesc()
+                .map(ultimo -> ultimo.getId() + 1)
+                .orElse(1L);
+
+        String skuGenerado = String.format("TEC-%03d", siguienteNumero);
+
+        while (productoRepository.existsByCodigoSkuIgnoreCase(skuGenerado)) {
+            siguienteNumero++;
+            skuGenerado = String.format("TEC-%03d", siguienteNumero);
+        }
+
+        return skuGenerado;
     }
 }

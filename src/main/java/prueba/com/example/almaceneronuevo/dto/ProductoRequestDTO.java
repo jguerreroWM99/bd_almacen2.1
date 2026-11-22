@@ -5,7 +5,6 @@ import java.math.BigDecimal;
 
 public class ProductoRequestDTO {
 
-    @NotBlank(message = "El código SKU es obligatorio")
     private String codigoSku;
 
     @NotBlank(message = "El nombre del producto es obligatorio")
