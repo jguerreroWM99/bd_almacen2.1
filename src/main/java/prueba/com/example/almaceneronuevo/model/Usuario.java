@@ -12,6 +12,9 @@ public class Usuario {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(name = "usuario", nullable = false, unique = true, length = 50)
+    private String username;
+
     @Column(nullable = false, length = 100)
     private String nombres;
 
@@ -19,7 +22,7 @@ public class Usuario {
     private String apellidos;
 
     @Column(name = "documento_identidad", nullable = false, unique = true, length = 30)
-    private String documentoIdentidad; // Soporta DNI (8) o Carné de Extranjería / Pasaporte (hasta 30)
+    private String documentoIdentidad;
 
     @Column(name = "fecha_nacimiento", nullable = false)
     private LocalDate fechaNacimiento;
@@ -58,6 +61,14 @@ public class Usuario {
 
     public void setId(Long id) {
         this.id = id;
+    }
+
+    public String getUsername() {
+        return username;
+    }
+
+    public void setUsername(String username) {
+        this.username = username;
     }
 
     public String getNombres() {
